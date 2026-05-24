@@ -186,6 +186,30 @@ elif page == "📊 Dashboard":
         st.metric("Positive", airline_counts.get('positive', 0))
         st.metric("Neutral", airline_counts.get('neutral', 0))
 
+    # Word Cloud for selected airline
+    st.markdown("---")
+    st.subheader(f"☁️ Most Common Words - {selected_airline}")
+    nltk.download('stopwords', quiet=True)
+    stop_words = set(stopwords.words('english'))
+
+    airline_words = ' '.join(airline_df['text'])
+    filtered_words = ' '.join([
+        w for w in airline_words.split()
+        if w.lower() not in stop_words
+    ])
+
+    wordcloud = WordCloud(
+        width=800,
+        height=400,
+        background_color='white',
+        colormap='RdYlGn'
+    ).generate(filtered_words)
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.imshow(wordcloud)
+    ax.axis('off')
+    st.pyplot(fig)
+
 # ─── PREDICT PAGE ───
 elif page == "🔍 Predict Tweet":
     st.title("🔍 Tweet Sentiment Predictor")
@@ -227,13 +251,13 @@ elif page == "ℹ️ About":
 
     st.markdown("""
     ## 📌 Project Summary
-    This is an NLP based Data Analytics project that analyzes 
+    This is an NLP based Data Analytics project that analyzes
     customer sentiments from airline tweets.
-    
+
     ## 🎯 Business Problem
     Airlines need to understand customer feedback at scale.
     This dashboard provides instant insights from 14,640 tweets.
-    
+
     ## 🤖 ML Model Performance
     | Metric | Score |
     |--------|-------|
@@ -241,7 +265,7 @@ elif page == "ℹ️ About":
     | Negative F1 | 0.88 |
     | Positive F1 | 0.70 |
     | Neutral F1 | 0.59 |
-    
+
     ## 💡 Key Concepts Used
     - Natural Language Processing (NLP)
     - TF-IDF Vectorization
@@ -249,7 +273,7 @@ elif page == "ℹ️ About":
     - Data Visualization
     - Streamlit Dashboard
     - Class Imbalance Problem
-    
+
     ## 👨‍💻 Developer
     **Devyansh**
     - GitHub: github.com/Devyansh4cs
