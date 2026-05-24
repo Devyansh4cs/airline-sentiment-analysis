@@ -10,7 +10,7 @@ st.write("Analyze customer sentiments from airline tweets")
 
 @st.cache_data
 def load_and_train():
-    df = pd.read_csv("Tweets.csv")
+    df = pd.read_csv("data/Tweets.csv")
     df = df[['text', 'airline_sentiment', 'airline']]
     
     vectorizer = TfidfVectorizer(max_features=5000)
