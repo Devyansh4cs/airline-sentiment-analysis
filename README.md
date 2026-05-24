@@ -27,3 +27,55 @@ about customer satisfaction across major US airlines.
 - NLTK
 
 ## 📁 Project Structure
+
+    social media sentiment analysis/
+    │
+    ├── data/
+    │   └── Tweets.csv
+    │
+    ├── 1_sentiment_analysis.py
+    ├── 2_bar_pie_chart.py
+    ├── 3_wordcloud.py
+    ├── 4_sentiment_wordcloud.py
+    ├── 5_airline_comparison.py
+    ├── 6_ml_model.py
+    ├── 7_prediction.py
+    ├── app.py
+    └── README.md
+
+## ⚙️ How To Run
+
+### Install dependencies
+    pip install pandas matplotlib wordcloud nltk scikit-learn plotly streamlit
+
+### Run individual analysis files
+    python 1_sentiment_analysis.py
+    python 2_bar_pie_chart.py
+    python 3_wordcloud.py
+    python 4_sentiment_wordcloud.py
+    python 5_airline_comparison.py
+    python 6_ml_model.py
+    python 7_prediction.py
+
+### Run Web Application
+    streamlit run app.py
+
+## 🤖 ML Model Performance
+| Metric | Score |
+|--------|-------|
+| Accuracy | 80% |
+| Negative F1 | 0.88 |
+| Positive F1 | 0.70 |
+| Neutral F1 | 0.59 |
+
+## 📈 Project Pipeline
+Raw Tweets → Data Cleaning → Sentiment Analysis → Visualization → ML Model → Web Application
+
+## 💡 Key Concepts Learned
+- NLP Text Preprocessing
+- Sentiment Analysis
+- TF-IDF Vectorization
+- Logistic Regression
+- Data Visualization
+- Streamlit Web Apps
+- Class Imbalance Problem
