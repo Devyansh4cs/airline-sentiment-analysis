@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
 import plotly.express as px
 import nltk
 from nltk.corpus import stopwords
@@ -60,7 +59,7 @@ st.sidebar.markdown("---")
 
 page = st.sidebar.radio(
     "Navigate",
-    ["🏠 Home", "📊 Dashboard", "🔍 Predict Tweet", "ℹ️ About"]
+    ["🏠 Home", "📊 Dashboard", "🔍 Predict Tweet", "📂 Bulk Analysis", "ℹ️ About"]
 )
 
 st.sidebar.markdown("---")
@@ -111,7 +110,6 @@ elif page == "📊 Dashboard":
     st.title("📊 Analytics Dashboard")
     st.markdown("---")
 
-    # Row 1 - Charts
     col1, col2 = st.columns(2)
 
     with col1:
@@ -141,7 +139,6 @@ elif page == "📊 Dashboard":
 
     st.markdown("---")
 
-    # Row 2 - Insights
     st.subheader("🏆 Key Business Insights")
     col1, col2, col3 = st.columns(3)
 
@@ -159,7 +156,6 @@ elif page == "📊 Dashboard":
 
     st.markdown("---")
 
-    # Row 3 - Airline filter
     st.subheader("🔎 Analyze Specific Airline")
     selected_airline = st.selectbox(
         "Select Airline:",
@@ -186,7 +182,7 @@ elif page == "📊 Dashboard":
         st.metric("Positive", airline_counts.get('positive', 0))
         st.metric("Neutral", airline_counts.get('neutral', 0))
 
-    # Word Cloud for selected airline
+    # Word Cloud
     st.markdown("---")
     st.subheader(f"☁️ Most Common Words - {selected_airline}")
     nltk.download('stopwords', quiet=True)
@@ -243,6 +239,78 @@ elif page == "🔍 Predict Tweet":
 
         else:
             st.warning("Please enter a tweet first!")
+
+# ─── BULK ANALYSIS PAGE ───
+elif page == "📂 Bulk Analysis":
+    st.title("📂 Bulk Tweet Analysis")
+    st.markdown("---")
+
+    st.info("""
+    Upload a CSV file with a column named **'text'**
+    containing tweets to analyze all at once!
+    """)
+
+    uploaded_file = st.file_uploader(
+        "Upload CSV file",
+        type=['csv']
+    )
+
+    if uploaded_file is not None:
+        upload_df = pd.read_csv(uploaded_file)
+
+        st.success(f"✅ File uploaded! Found {len(upload_df)} rows")
+
+        if 'text' in upload_df.columns:
+
+            st.subheader("🔍 Analyzing tweets...")
+
+            texts = upload_df['text'].astype(str)
+            vecs = vectorizer.transform(texts)
+            predictions = model.predict(vecs)
+            confidences = model.predict_proba(vecs).max(axis=1) * 100
+
+            upload_df['Predicted Sentiment'] = predictions
+            upload_df['Confidence %'] = confidences.round(1)
+
+            st.markdown("---")
+
+            col1, col2, col3 = st.columns(3)
+            pred_counts = pd.Series(predictions).value_counts()
+
+            with col1:
+                st.error(f"😞 Negative\n\n**{pred_counts.get('negative', 0)}**")
+            with col2:
+                st.success(f"😊 Positive\n\n**{pred_counts.get('positive', 0)}**")
+            with col3:
+                st.warning(f"😐 Neutral\n\n**{pred_counts.get('neutral', 0)}**")
+
+            st.markdown("---")
+
+            fig = px.pie(
+                values=pred_counts.values,
+                names=pred_counts.index,
+                title="Sentiment Distribution of Uploaded Tweets",
+                color_discrete_sequence=px.colors.qualitative.Set2
+            )
+            st.plotly_chart(fig)
+
+            st.subheader("📋 Detailed Results")
+            st.dataframe(
+                upload_df[['text', 'Predicted Sentiment', 'Confidence %']]
+            )
+
+            st.subheader("📥 Download Results")
+            csv = upload_df.to_csv(index=False)
+            st.download_button(
+                label="📥 Download Results as CSV",
+                data=csv,
+                file_name="sentiment_results.csv",
+                mime="text/csv"
+            )
+
+        else:
+            st.error("❌ CSV file must have a column named 'text'!")
+            st.info("Please make sure your CSV has a 'text' column!")
 
 # ─── ABOUT PAGE ───
 elif page == "ℹ️ About":
