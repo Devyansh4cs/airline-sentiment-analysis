@@ -3,6 +3,7 @@ import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 import plotly.express as px
+import plotly.graph_objects as go
 import nltk
 from nltk.corpus import stopwords
 from wordcloud import WordCloud
@@ -26,9 +27,6 @@ st.markdown("""
         border-radius: 10px;
         text-align: center;
     }
-    .positive {color: #00cc96;}
-    .negative {color: #ef553b;}
-    .neutral {color: #636efa;}
     </style>
 """, unsafe_allow_html=True)
 
@@ -36,7 +34,10 @@ st.markdown("""
 @st.cache_data
 def load_and_train():
     df = pd.read_csv("data/Tweets.csv")
-    df = df[['text', 'airline_sentiment', 'airline']]
+
+    # Convert date column
+    df['tweet_created'] = pd.to_datetime(df['tweet_created'])
+    df['date'] = df['tweet_created'].dt.date
 
     vectorizer = TfidfVectorizer(max_features=5000)
     X = vectorizer.fit_transform(df['text'])
@@ -59,7 +60,7 @@ st.sidebar.markdown("---")
 
 page = st.sidebar.radio(
     "Navigate",
-    ["🏠 Home", "📊 Dashboard", "🔍 Predict Tweet", "📂 Bulk Analysis", "ℹ️ About"]
+    ["🏠 Home", "📊 Dashboard", "📈 Trends", "🔍 Predict Tweet", "📂 Bulk Analysis", "ℹ️ About"]
 )
 
 st.sidebar.markdown("---")
@@ -206,6 +207,97 @@ elif page == "📊 Dashboard":
     ax.axis('off')
     st.pyplot(fig)
 
+# ─── TRENDS PAGE ───
+elif page == "📈 Trends":
+    st.title("📈 Sentiment Trends & Deep Analysis")
+    st.markdown("---")
+
+    # Time Series Chart
+    st.subheader("📅 Sentiment Trend Over Time")
+    daily_sentiment = df.groupby(
+        ['date', 'airline_sentiment']
+    ).size().reset_index(name='count')
+
+    fig_time = px.line(
+        daily_sentiment,
+        x='date',
+        y='count',
+        color='airline_sentiment',
+        title="Daily Sentiment Trend",
+        color_discrete_sequence=px.colors.qualitative.Set2
+    )
+    st.plotly_chart(fig_time, use_container_width=True)
+
+    st.info("""
+    📊 **Data Insight:** This chart shows how customer 
+    sentiments changed day by day. Spikes in negative tweets 
+    indicate specific incidents or service failures.
+    """)
+
+    st.markdown("---")
+
+    # Negative Reasons Chart
+    st.subheader("😞 Why Are Customers Unhappy?")
+    negative_df = df[df['airline_sentiment'] == 'negative']
+    negative_reasons = negative_df['negativereason'].value_counts().dropna()
+
+    fig_reasons = px.bar(
+        x=negative_reasons.values,
+        y=negative_reasons.index,
+        orientation='h',
+        title="Top Reasons for Negative Sentiment",
+        color=negative_reasons.values,
+        color_continuous_scale='Reds'
+    )
+    fig_reasons.update_layout(yaxis={'categoryorder': 'total ascending'})
+    st.plotly_chart(fig_reasons, use_container_width=True)
+
+    st.error("""
+    📊 **Business Insight:** Customer Service Issues and 
+    Late Flights are the top complaints. Airlines should 
+    focus on improving these areas first!
+    """)
+
+    st.markdown("---")
+
+    # Most Viral Complaints
+    st.subheader("🔥 Most Viral Complaints")
+    viral_tweets = df[df['airline_sentiment'] == 'negative'].nlargest(
+        10, 'retweet_count'
+    )[['text', 'airline', 'retweet_count']]
+
+    st.dataframe(viral_tweets, use_container_width=True)
+
+    st.warning("""
+    📊 **Business Insight:** These are the most retweeted 
+    negative tweets. These complaints reached the most people 
+    and caused maximum damage to airline reputation!
+    """)
+
+    st.markdown("---")
+
+    # Negative reasons per airline
+    st.subheader("✈️ Complaint Reasons Per Airline")
+    selected_airline2 = st.selectbox(
+        "Select Airline to analyze complaints:",
+        df['airline'].unique(),
+        key='trends_airline'
+    )
+
+    airline_negative = df[
+        (df['airline'] == selected_airline2) &
+        (df['airline_sentiment'] == 'negative')
+    ]
+    airline_reasons = airline_negative['negativereason'].value_counts().dropna()
+
+    fig_airline_reasons = px.pie(
+        values=airline_reasons.values,
+        names=airline_reasons.index,
+        title=f"Complaint Reasons - {selected_airline2}",
+        color_discrete_sequence=px.colors.qualitative.Set3
+    )
+    st.plotly_chart(fig_airline_reasons, use_container_width=True)
+
 # ─── PREDICT PAGE ───
 elif page == "🔍 Predict Tweet":
     st.title("🔍 Tweet Sentiment Predictor")
@@ -262,8 +354,6 @@ elif page == "📂 Bulk Analysis":
 
         if 'text' in upload_df.columns:
 
-            st.subheader("🔍 Analyzing tweets...")
-
             texts = upload_df['text'].astype(str)
             vecs = vectorizer.transform(texts)
             predictions = model.predict(vecs)
@@ -310,7 +400,6 @@ elif page == "📂 Bulk Analysis":
 
         else:
             st.error("❌ CSV file must have a column named 'text'!")
-            st.info("Please make sure your CSV has a 'text' column!")
 
 # ─── ABOUT PAGE ───
 elif page == "ℹ️ About":
@@ -338,6 +427,7 @@ elif page == "ℹ️ About":
     - Natural Language Processing (NLP)
     - TF-IDF Vectorization
     - Logistic Regression
+    - Time Series Analysis
     - Data Visualization
     - Streamlit Dashboard
     - Class Imbalance Problem
